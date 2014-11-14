@@ -32,6 +32,12 @@ And your good to go. The default url to connect to using your browser is : 'loca
 ##Using
 * [ffmpeg](http://ffmpeg.org/legal.html)
 
+##todo
+
+* Refactoriring the **Ortcoi** server code  for executing the process without creating an http server.
+* Propose an online service for presentation preparation.
+* Create a **Ortcoi** installation and utilisation documentation.
+
 ##Tested on
 
 * Chromium 37+
