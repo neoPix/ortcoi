@@ -3,13 +3,25 @@ Ninpp.ortcoiCreator = function(){this._init()};
 Ninpp.ortcoiCreator.prototype = {
 	_init: function(){
 		var $this = this;
+		this._step0 = document.getElementById('step0');
 		this._step1 = document.getElementById('step1');
 		this._step2 = document.getElementById('step2');
+		this._step3 = document.getElementById('step3');
 
 		this._fileReader = document.getElementById('readFile');
 		this._compress = document.getElementById('useConpression');
+		this._goStep1 = document.getElementById('goStep1');
+		this._goProcess = document.getElementById('goProcess');
 
-		this._fileReader.addEventListener('change', function(){$this._readZip($this._fileReader.files[0]);});
+		this._goStep1.addEventListener('click', function(){
+			$this._step0.style.display = 'none';
+			$this._step1.style.display = 'inherit';
+		});
+		this._goProcess.addEventListener('click', function(e){
+			e.preventDefault();
+			if($this._fileReader.files && $this._fileReader.files.length > 0)
+				$this._readZip($this._fileReader.files[0]);
+		});
 	},
 	_readZip: function(file){
 		var $this = this, reader = new FileReader();
@@ -163,7 +175,7 @@ Ninpp.ortcoiCreator.prototype = {
 		form = new FormData(),
 	    request = new XMLHttpRequest();
 		form.append("blob",blob);
-		request.open("POST","http://localhost:8080/Upload",true);
+		request.open("POST","/Upload",true);
 		request.onreadystatechange = function() {
 			if(request.readyState == 4 && request.status == 200){
 				$this.uploadDone(JSON.parse(request.responseText));
@@ -177,20 +189,26 @@ Ninpp.ortcoiCreator.prototype = {
 		this.currentState = status;
 		this.interval = window.setInterval(function(){
 			var request = new XMLHttpRequest();
-			request.open("GET","http://localhost:8080/GetStatus?token="+$this.currentState.token,true);
+			request.open("GET","/GetStatus?token="+$this.currentState.token,true);
 			request.onreadystatechange = function() {
 				if(request.readyState == 4 && request.status == 200){
 					$this.updateState(JSON.parse(request.responseText));
 				}
 			};
 			request.send();
-		}, 500);
+		}, 1000);
 	},
 	updateState: function(status){
 		if(status.state == 'done'){
 			window.clearInterval(this.interval);
 			this._step2.innerHTML = status.state;
-			document.location.replace('http://localhost:8080/GetFile?token='+this.currentState.token);
+			this._step2.style.display = 'none';
+			this._step3.style.display = 'inherit';
+			document.getElementById('link').setAttribute('href', '/GetFile?token='+this.currentState.token);
+		}
+		else if(status.state == 'failed'){
+			this._step2.innerHTML = status.state;
+			window.clearInterval(this.interval);
 		}
 		else{
 			this._step2.innerHTML = status.state;

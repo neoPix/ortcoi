@@ -22,7 +22,7 @@ Queue.prototype = {
 };
 
 var FFmpegEncode = function(params, done, fail){ 
-    var process = spawn('./bin/ffmpeg', params, { stdio: 'ignore' });
+    var process = spawn('./data/bin/ffmpeg', params, { stdio: 'ignore' });
 
     process.on('close', function (code) {
         if(code == 0)
@@ -79,6 +79,9 @@ App.prototype = {
         console.log('Starting ninpp server on port : '+port);
     },
     getFile: function(request, response){
+        if(request.query.pathname == '/')
+            request.query.pathname = '/index.html';
+
         var path = '.'+request.query.pathname;
         fs.readFile(path, 'utf8', function (err,data) {
             if(err){
@@ -96,9 +99,9 @@ App.prototype = {
         return parseInt(Math.random() * 1000000000).toString(32);
     },
     download: function(request, response){
-        fs.readFile('./done/'+request.query.query.token+'.zip', 'binary', function(err, data){
+        fs.readFile('./data/done/'+request.query.query.token+'.zip', 'binary', function(err, data){
             if(err){
-                console.log('Error while reading "./done/'+request.query.query.token+'.zip" :' + err);
+                console.log('Error while reading "./data/done/'+request.query.query.token+'.zip" :' + err);
                 response.end();
                 return;
             }
@@ -153,7 +156,7 @@ App.prototype = {
     },
     manageQueue: function(){
         var $this = this;
-        exec('rm ./curent.zip && rm -R ./curent', function(){
+        exec('rm ./data/curent.zip && rm -R ./data/curent', function(){
             if($this._current == null && $this._queue.size() > 0){
                 $this._current = $this._queue.dequeue();
                 $this.copyFile($this._current, function(){
@@ -166,7 +169,7 @@ App.prototype = {
     },
     openZip: function(){
         var $this = this;
-        fs.readFile('./curent.zip', function(err, data) {
+        fs.readFile('./data/curent.zip', function(err, data) {
             if (err) {
                 $this.manageError(err);
                 return;
@@ -177,7 +180,7 @@ App.prototype = {
     },
     manageZip: function(zip){
         var $this = this;
-        exec('mkdir -p ./done/'+$this._current.token+' && unzip curent.zip -d curent', function(error){
+        exec('mkdir -p ./data/done/'+$this._current.token+' && unzip ./data/curent.zip -d ./data/curent', function(error){
             $this.convert(zip);
         });
     },
@@ -203,12 +206,12 @@ App.prototype = {
 
             console.log('Début de la convertion/merge audio et video de "'+$this._current.token+'".');
 
-            processes.h264 = FFmpegEncode(['-i', './curent/video.mp4', '-itsoffset', '-1.45', '-i', './curent/audio.ogg', '-c:v', 'h264', '-c:a', 'mp3', '-r', '24', '-strict', 'experimental', './done/'+$this._current.token+'/video.mp4'], function(){
+            processes.h264 = FFmpegEncode(['-i', './data/curent/video.mp4', '-itsoffset', '-1.45', '-i', './data/curent/audio.ogg', '-c:v', 'h264', '-c:a', 'mp3', '-r', '24', '-strict', 'experimental', './data/done/'+$this._current.token+'/video.mp4'], function(){
                 done();
-                processes.ogg = FFmpegEncode(['-i', './done/'+$this._current.token+'/video.mp4', '-c:v', 'theora', '-c:a', 'vorbis', '-ac', '2', '-strict', 'experimental', './done/'+$this._current.token+'/video.ogg'], done, function(){
+                processes.ogg = FFmpegEncode(['-i', './data/done/'+$this._current.token+'/video.mp4', '-c:v', 'theora', '-c:a', 'vorbis', '-ac', '2', '-strict', 'experimental', './data/done/'+$this._current.token+'/video.ogg'], done, function(){
                     $this.manageError('ogg conversion error.');
                 });
-                processes.webm = FFmpegEncode(['-i', './done/'+$this._current.token+'/video.mp4', '-c:v', 'libvpx', '-c:a', 'vorbis', '-ac', '2', '-strict', 'experimental', './done/'+$this._current.token+'/video.webm'], done, function(){
+                processes.webm = FFmpegEncode(['-i', './data/done/'+$this._current.token+'/video.mp4', '-c:v', 'libvpx', '-c:a', 'vorbis', '-ac', '2', '-strict', 'experimental', './data/done/'+$this._current.token+'/video.webm'], done, function(){
                     $this.manageError('webm conversion error.');
                 });
             }, function(){
@@ -234,16 +237,16 @@ App.prototype = {
 
             console.log('Début de la convertion audio et video de "'+$this._current.token+'".');
 
-            processes.h264 = FFmpegEncode(['-ss', '0.05','-i', './curent/video.mp4', '-c:v', 'h264', '-c:a', 'mp3', '-r', '24', '-strict', 'experimental', './done/'+$this._current.token+'/video.mp4'], function(){
+            processes.h264 = FFmpegEncode(['-ss', '0.05','-i', './data/curent/video.mp4', '-c:v', 'h264', '-c:a', 'mp3', '-r', '24', '-strict', 'experimental', './data/done/'+$this._current.token+'/video.mp4'], function(){
                 done();
-                processes.webm = FFmpegEncode(['-i', './done/'+$this._current.token+'/video.mp4','-c:v', 'libvpx', '-c:a', 'vorbis', '-ac', '2','-r', '24', '-strict', 'experimental', './done/'+$this._current.token+'/video.webm'], done, function(){
+                processes.webm = FFmpegEncode(['-i', './data/done/'+$this._current.token+'/video.mp4','-c:v', 'libvpx', '-c:a', 'vorbis', '-ac', '2','-r', '24', '-strict', 'experimental', './data/done/'+$this._current.token+'/video.webm'], done, function(){
                     fail('webm conversion error.');
                 });
             }, function(){
                 fail('h264 conversion error.');
             });
 
-            processes.ogg = FFmpegEncode(['-i', './curent/video.mp4', '-c:v', 'theora', '-c:a', 'vorbis', '-ac', '2', '-r', '24', '-strict', 'experimental', './done/'+$this._current.token+'/video.ogg'], done, function(){
+            processes.ogg = FFmpegEncode(['-i', './data/curent/video.mp4', '-c:v', 'theora', '-c:a', 'vorbis', '-ac', '2', '-r', '24', '-strict', 'experimental', './data/done/'+$this._current.token+'/video.ogg'], done, function(){
                 fail('ogg conversion error.');
             });
         }
@@ -266,11 +269,11 @@ App.prototype = {
 
             console.log('Début de la convertion audio de "'+$this._current.token+'".');
 
-            processes.mp3 = FFmpegEncode(['-i', './curent/audio.ogg', '-c:a', 'mp3', '-strict', 'experimental', './done/'+$this._current.token+'/audio.mp3'], fdone, function(){
+            processes.mp3 = FFmpegEncode(['-i', './data/curent/audio.ogg', '-c:a', 'mp3', '-strict', 'experimental', './data/done/'+$this._current.token+'/audio.mp3'], fdone, function(){
                 fail('mp3 conversion error.');
             });
 
-            processes.ogg = FFmpegEncode(['-i', './curent/audio.ogg', '-c:a', 'vorbis', '-strict', 'experimental', './done/'+$this._current.token+'/audio.ogg'], done, function(){
+            processes.ogg = FFmpegEncode(['-i', './data/curent/audio.ogg', '-c:a', 'vorbis', '-strict', 'experimental', './data/done/'+$this._current.token+'/audio.ogg'], done, function(){
                 fail('vorbis conversion error.');
             });
         }
@@ -278,7 +281,7 @@ App.prototype = {
     createThumbnail: function(zip){
         this._current.state = 'thumbnail';
         var $this = this;
-        FFmpegEncode(['-itsoffset', '-4', '-i', './curent/video.mp4', '-f', 'image2', '-vframes', '1', './done/'+this._current.token+'/thumb.jpg'], function(){
+        FFmpegEncode(['-itsoffset', '-4', '-i', './data/curent/video.mp4', '-f', 'image2', '-vframes', '1', './data/done/'+this._current.token+'/thumb.jpg'], function(){
             console.log('Création de la miniature de "'+$this._current.token+'".');
             $this.createHTML(zip);
         }, function(){
@@ -288,7 +291,7 @@ App.prototype = {
     createHTML: function(zip){
         var $this = this;
         this._current.state = 'html';
-        fs.readFile('./template.html', 'utf8', function (err,data) {
+        fs.readFile('./data/template.html', 'utf8', function (err,data) {
             if (err) {
                 return $this.manageError(err);
             }
@@ -296,14 +299,14 @@ App.prototype = {
                 .replace('%media%', $this.getMediaHtml())
                 .replace('%slides%', zip.file('slides.html').asText())
                 .replace('%record%', zip.file('record.json').asText());
-            fs.writeFile('./done/'+$this._current.token+'/index.html', data, function(err) {
+            fs.writeFile('./data/done/'+$this._current.token+'/index.html', data, function(err) {
                 if (err) {
                     return $this.manageError(err);
                 }
                 console.log('Création du document html de "'+$this._current.token+'".');
-                exec('zip -r -9 ./done/'+$this._current.token+'.zip ./done/'+$this._current.token+'/', function(){
+                exec('zip -r -9 ./data/done/'+$this._current.token+'.zip ./data/done/'+$this._current.token+'/', function(){
                     console.log('Génération du fichier zip "'+$this._current.token+'".');
-                    exec('rm -r ./done/'+$this._current.token+'/', function(){
+                    exec('rm -r ./data/done/'+$this._current.token+'/', function(){
                         console.log('Nettoyage pour "'+$this._current.token+'".');
                         $this.creationDone();
                     });
@@ -340,7 +343,7 @@ App.prototype = {
     },
     copyFile: function(element, end, error){
         var source = fs.createReadStream(element.file.path);
-        var dest = fs.createWriteStream('./curent.zip');
+        var dest = fs.createWriteStream('./data/curent.zip');
         source.pipe(dest);
         source.on('end', end);
         source.on('error', error);
