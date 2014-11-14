@@ -1,0 +1,11 @@
+{
+    "name": "Ortcoi_server",
+    "version": "0.1.0",
+    "dependencies": {
+        "multiparty": "~4.0.0",
+        "jszip": "~2.4.0",
+        "mime": "latest"
+    },
+    "author": "NeoPix <https://github.com/neoPix>",
+    "description": "Application server de Ninpp Ortcoi, convertion audio/vidéo et assemblage des données."
+}
