@@ -140,7 +140,7 @@ Ninpp.ortcoiCreator.prototype = {
 			args.push('-c:a');
 			args.push('copy');
 		}
-		else if(type == "ogg"){
+		else if(type != "ogg"){
 			args.push('-c:a');
 			args.push('vorbis');
 		}
